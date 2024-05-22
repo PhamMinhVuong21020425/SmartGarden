@@ -1,15 +1,15 @@
 'use server'
-import { type Metrics } from '@/app/components/SmartGardenChart'
+import { Metrics } from '@/app/pages/Home'
 import { revalidatePath } from 'next/cache'
 
 
 export const getData = async () => {
     try {
         const url = process.env.API_URL!
-        const response = await fetch(url + '?results=2000')
-        const data = await response.json() as { feeds: Metrics }
+        const response = await fetch(url + '?results=500')
+        const data = await response.json()
         revalidatePath('/')
-        return data.feeds
+        return data.feeds as Metrics
     } catch (error: unknown) {
         console.log(error)
         throw new Error(`An error happened: ${error}`)

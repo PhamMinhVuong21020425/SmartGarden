@@ -1,45 +1,24 @@
 "use client";
 import { useState, useEffect } from 'react'
-import { getData } from '@/actions/getData'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import Loading from './Loading';
+import { Metrics, Field } from '../pages/Home';
 
-const CO2 = 'field1'
-const HUMIDITY = 'field2'
-const ROOM_TEMPERATURE = 'field3'
-const SENSOR_TEMPERATURE = 'field4'
-const SHT85_TEMPERATURE = 'field5'
+
 
 type Props = {
     field: string,
     color: string,
-}
-
-type Field = {
-    [CO2]: string,
-    [HUMIDITY]: string,
-    [ROOM_TEMPERATURE]: string,
-    [SENSOR_TEMPERATURE]: string,
-    [SHT85_TEMPERATURE]: string,
+    feeds: Metrics
 }
 
 const mapping: Field = {
-    [CO2]: 'CO2',
-    [HUMIDITY]: 'Humidity',
-    [ROOM_TEMPERATURE]: 'Room Temperature',
-    [SENSOR_TEMPERATURE]: 'Sensor Temperature',
-    [SHT85_TEMPERATURE]: 'SHT85 Temperature'
+    "field1": 'CO2',
+    "field2": 'Humidity',
+    "field3": 'Room Temperature',
+    "field4": 'Sensor Temperature',
+    "field5": 'SHT85 Temperature'
 }
-
-export type Metrics = {
-    entry_id: number,
-    created_at: string,
-    [CO2]: number,
-    [HUMIDITY]: number,
-    [ROOM_TEMPERATURE]: number,
-    [SENSOR_TEMPERATURE]: number,
-    [SHT85_TEMPERATURE]: number,
-}[]
 
 function formatTime(time: string): string {
     const date = new Date(time);
@@ -51,33 +30,32 @@ function formatTime(time: string): string {
     const minutes = String(date.getMinutes()).padStart(2, '0');
     const seconds = String(date.getSeconds()).padStart(2, '0');
 
-    return `${hours}:${minutes}:${seconds}`;
+    return `${hours}:${minutes}`;
 }
 
 export default function SmartGardenChart({ att }: { att: Props }) {
-    const [data, setData] = useState<Metrics>();
     const [dataPoints, setDataPoints] = useState<Object[]>();
-    const [refreshToken, setRefreshToken] = useState(Math.random());
 
     useEffect(() => {
-        getData()
-            .then((feeds) => {
-                setData(feeds);
-                setDataPoints(feeds.map((feed) => {
-                    return {
-                        name: formatTime(feed.created_at),
-                        [mapping[att.field as keyof Field]]: feed[att.field as keyof Metrics[0]] as number,
-                    }
-                }));
-            })
-            .finally(() => {
-                // Update refreshToken after 3 seconds so this event will re-trigger and update the data
-                setTimeout(() => setRefreshToken(Math.random()), 10000);
-            });
-    }, [refreshToken]);
+        let i = true;
+        setDataPoints(att.feeds!.map((feed) => {
+            if (i) {
+                i = false;
+                let start = feed[att.field as keyof Metrics[0]] as number
+                return {
+                    name: "",
+                    [mapping[att.field as keyof Field]]: start * 2.5,
+                }
+            }
+            return {
+                name: formatTime(feed.created_at),
+                [mapping[att.field as keyof Field]]: feed[att.field as keyof Metrics[0]] as number,
+            }
+        }));
+    }, [att.feeds]);
 
     return (
-        data ?
+        dataPoints ?
             <div>
                 {/* <h1>Created at: {data[1999].created_at}</h1>
                 <h1>CO2: {data[1999][CO2]}</h1>
