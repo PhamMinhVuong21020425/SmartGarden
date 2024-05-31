@@ -3,10 +3,10 @@ import { Metrics } from '@/app/pages/Home'
 import { revalidatePath } from 'next/cache'
 
 
-export const getData = async () => {
+export const getData = async (numRes: number) => {
     try {
         const url = process.env.API_URL!
-        const response = await fetch(url + '?results=500')
+        const response = await fetch(url + `?results=${numRes}`)
         const data = await response.json()
         revalidatePath('/')
         return data.feeds as Metrics

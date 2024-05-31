@@ -1,15 +1,23 @@
 "use client";
 import { useState, useEffect } from 'react'
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts'
 import Loading from './Loading';
 import { Metrics, Field } from '../pages/Home';
-
-
 
 type Props = {
     field: string,
     color: string,
-    feeds: Metrics
+    feeds: Metrics,
+    unit: string,
+}
+
+interface DataPoint<T> {
+    [key: string]: T,
+}
+
+type DataPointType = DataPoint<number> & {
+    name: string,
+    original: number
 }
 
 const mapping: Field = {
@@ -30,48 +38,87 @@ function formatTime(time: string): string {
     const minutes = String(date.getMinutes()).padStart(2, '0');
     const seconds = String(date.getSeconds()).padStart(2, '0');
 
-    return `${hours}:${minutes}`;
+    return `${hours}:${minutes}:${seconds}`;
 }
 
+const generateReferenceLines = (dataPoints: DataPointType[], dataKey: string) => {
+    const filteredValues = dataPoints.map(dp => dp[dataKey]);
+    const minValue = Math.min(...filteredValues);
+    const maxValue = Math.max(...filteredValues);
+    const minOriginal = Math.min(...dataPoints.map(dp => isNaN(dp.original) ? Number.MAX_VALUE : dp.original));
+
+    const intervalCount = 5.0; // Number of intervals to divide the y-axis range
+    const interval = (maxValue - minValue) / intervalCount;
+
+    const referenceLines = [];
+
+    for (let i = 0; i < intervalCount; i++) {
+        const yValue = minValue + i * interval;
+        referenceLines.push(
+            <ReferenceLine
+                key={`refLine-${i}`}
+                y={yValue}
+                stroke="#ddd"
+                strokeDasharray="5 5"
+                label={{
+                    position: 'left',
+                    value: (yValue / 10000 + minOriginal).toFixed(2),
+                    fill: '#555',
+                    fontSize: 12,
+                    offset: 10,
+                }}
+            />
+        );
+    }
+
+    return referenceLines;
+};
+
 export default function SmartGardenChart({ att }: { att: Props }) {
-    const [dataPoints, setDataPoints] = useState<Object[]>();
+    const [dataPoints, setDataPoints] = useState<DataPointType[]>([]);
 
     useEffect(() => {
-        let i = true;
-        setDataPoints(att.feeds!.map((feed) => {
-            if (i) {
-                i = false;
-                let start = feed[att.field as keyof Metrics[0]] as number
-                return {
-                    name: "",
-                    [mapping[att.field as keyof Field]]: start * 2.5,
-                }
+        let minVal = Math.min(...att.feeds!.map((feed) => {
+            let value = feed[att.field as keyof Metrics[0]] as number;
+            if (!isNaN(value)) {
+                return value;
+            } else {
+                return Number.MAX_VALUE;
             }
+        }));
+        setDataPoints(att.feeds!.map((feed) => {
+            let value = feed[att.field as keyof Metrics[0]] as number;
+            let newVal = 10000.0 * (value - minVal);
+            if (isNaN(newVal)) {
+                newVal = 0;
+            }
+
             return {
                 name: formatTime(feed.created_at),
-                [mapping[att.field as keyof Field]]: feed[att.field as keyof Metrics[0]] as number,
-            }
+                [mapping[att.field as keyof Field]]: newVal,
+                original: value,
+            } as DataPointType;
         }));
     }, [att.feeds]);
 
     return (
         dataPoints ?
             <div>
-                {/* <h1>Created at: {data[1999].created_at}</h1>
-                <h1>CO2: {data[1999][CO2]}</h1>
-                <h1>Humidity: {data[1999][HUMIDITY]}</h1>
-                <h1>Room Temperature: {data[1999][ROOM_TEMPERATURE]}</h1>
-                <h1>Sensor Temperature: {data[1999][SENSOR_TEMPERATURE]}</h1>
-                <h1>SHT85 Temperature: {data[1999][SHT85_TEMPERATURE]}</h1> */}
                 <div className="bg-white rounded-lg shadow-lg p-8">
                     <ResponsiveContainer width="100%" height={400}>
                         <AreaChart data={dataPoints}>
-                            <XAxis dataKey="name" />
-                            <YAxis />
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <Tooltip />
+                            <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#333' }} />
+                            <YAxis tick={false}
+                                axisLine={false}
+                                tickLine={false}
+                                label={{ value: att.unit, position: 'insideTop', fill: '#333' }}
+                            />
+                            {/* <CartesianGrid strokeDasharray="3 3" /> */}
+                            <Tooltip formatter={(value) => dataPoints.find(d => d[mapping[att.field as keyof Field]] === value)?.original} />
                             <Legend />
                             <Area type="monotone" dataKey={mapping[att.field as keyof Field]} stackId="1" stroke={att.color} fill={att.color} />
+                            {/* <ReferenceLine y={35} stroke="red" strokeDasharray="3 3" label={{ position: 'insideTopLeft', value: `${35}`, fill: 'red' }} /> */}
+                            {generateReferenceLines(dataPoints, mapping[att.field as keyof Field])}
                         </AreaChart>
                     </ResponsiveContainer>
                 </div>

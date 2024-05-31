@@ -50,7 +50,7 @@ export default function HomePage() {
     const [refreshToken, setRefreshToken] = useState(Math.random());
 
     useEffect(() => {
-        getData()
+        getData(50)
             .then((feeds) => setData(feeds))
             .finally(() => {
                 // Update refreshToken after 3 seconds so this event will re-trigger and update the data
@@ -69,7 +69,7 @@ export default function HomePage() {
                 <img src="https://static.vecteezy.com/system/resources/thumbnails/002/375/822/small_2x/smart-integrated-garden-and-farming-technology-free-vector.jpg" alt="Banner" className="object-cover h-full w-full" />
             </div>
 
-            {/* Tiêu đề */}
+            {/* Header */}
             <h1 className="text-3xl font-bold mb-4">My Smart Garden</h1>
 
             {/* Dropdown */}
@@ -82,17 +82,17 @@ export default function HomePage() {
                 />
             </div>
 
-            {/* Đồ thị */}
+            {/* Graph */}
             {
                 data ?
                     <>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <SmartGardenChart att={{ field: "field1", color: "#8bf8a7", feeds: data }} />
-                            <SmartGardenChart att={{ field: "field2", color: "pink", feeds: data }} />
-                            <SmartGardenChart att={{ field: "field3", color: "orange", feeds: data }} />
-                            <SmartGardenChart att={{ field: "field4", color: "blue", feeds: data }} />
+                            <SmartGardenChart att={{ field: "field1", color: "#8bf8a7", feeds: data, unit: 'ppm' }} />
+                            <SmartGardenChart att={{ field: "field2", color: "pink", feeds: data, unit: '%' }} />
+                            <SmartGardenChart att={{ field: "field3", color: "orange", feeds: data, unit: '℃' }} />
+                            <SmartGardenChart att={{ field: "field4", color: "blue", feeds: data, unit: '℃' }} />
                         </div>
-                        <SmartGardenChart att={{ field: "field5", color: "#82ca9d", feeds: data }} />
+                        <SmartGardenChart att={{ field: "field5", color: "#82ca9d", feeds: data, unit: '℃' }} />
                     </>
                     : <Loading />
             }
