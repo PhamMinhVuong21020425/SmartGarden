@@ -50,8 +50,55 @@ export default function HomePage() {
     const [refreshToken, setRefreshToken] = useState(Math.random());
 
     useEffect(() => {
-        getData(50)
-            .then((feeds) => setData(feeds))
+        getData(3000)
+            .then((feeds) => {
+                const averages: Metrics = [];
+
+                for (let i = 0; i < feeds.length; i += 20) {
+                    const sums: { [key: string]: number } = {
+                        field1: 0,
+                        field2: 0,
+                        field3: 0,
+                        field4: 0,
+                        field5: 0,
+                    };
+
+                    const counts: { [key: string]: number } = {
+                        field1: 0,
+                        field2: 0,
+                        field3: 0,
+                        field4: 0,
+                        field5: 0,
+                    };
+
+                    const chunk: Metrics = feeds.slice(i, i + 20);
+                    const entry_id = chunk[0].entry_id;
+                    const created_at = chunk[0].created_at;
+
+                    chunk.forEach(item => {
+                        for (const key of Object.keys(sums)) {
+                            const value = +item[key as keyof Metrics[0]];
+                            if (!isNaN(value)) {
+                                sums[key as keyof Field] += value;
+                                counts[key as keyof Field]++;
+                            }
+                        }
+                    });
+                    const average = {
+                        entry_id,
+                        created_at,
+                        field1: sums.field1 / counts.field1,
+                        field2: sums.field2 / counts.field2,
+                        field3: sums.field3 / counts.field3,
+                        field4: sums.field4 / counts.field4,
+                        field5: sums.field5 / counts.field5,
+                    } as Metrics[0];
+
+                    averages.push(average);
+                }
+
+                setData(averages);
+            })
             .finally(() => {
                 // Update refreshToken after 3 seconds so this event will re-trigger and update the data
                 setTimeout(() => setRefreshToken(Math.random()), 5000);
