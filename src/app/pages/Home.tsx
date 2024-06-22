@@ -136,10 +136,10 @@ export default function HomePage() {
                         <SmartGardenChart att={{ field: "field1", color: "#8bf8a7", feeds: data, unit: 'ppm' }} />
                         <br />
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <SmartGardenChart att={{ field: "field2", color: "pink", feeds: data, unit: '%' }} />
-                            <SmartGardenChart att={{ field: "field3", color: "orange", feeds: data, unit: '℃' }} />
-                            <SmartGardenChart att={{ field: "field4", color: "blue", feeds: data, unit: '℃' }} />
-                            <SmartGardenChart att={{ field: "field5", color: "#82ca9d", feeds: data, unit: '℃' }} />
+                            <SmartGardenChart att={{ field: "field2", color: "pink", feeds: data.slice(data.length - 100), unit: '%' }} />
+                            <SmartGardenChart att={{ field: "field3", color: "orange", feeds: data.slice(data.length - 100), unit: '℃' }} />
+                            <SmartGardenChart att={{ field: "field4", color: "blue", feeds: data.slice(data.length - 100), unit: '℃' }} />
+                            <SmartGardenChart att={{ field: "field5", color: "#82ca9d", feeds: data.slice(data.length - 100), unit: '℃' }} />
                         </div>
                     </>
                     : <Loading />
