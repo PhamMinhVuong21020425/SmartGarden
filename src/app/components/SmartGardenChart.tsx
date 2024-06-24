@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts'
 import Loading from './Loading';
 import { Metrics, Field } from '../pages/Home';
@@ -56,6 +56,7 @@ const generateReferenceLines = (dataPoints: DataPointType[], dataKey: string) =>
         const yValue = minValue + i * interval;
         referenceLines.push(
             <ReferenceLine
+                className='absolute top-0 left-0'
                 key={`refLine-${i}`}
                 y={yValue}
                 stroke="#ddd"
@@ -76,6 +77,8 @@ const generateReferenceLines = (dataPoints: DataPointType[], dataKey: string) =>
 
 export default function SmartGardenChart({ att }: { att: Props }) {
     const [dataPoints, setDataPoints] = useState<DataPointType[]>([]);
+    const chartContainerRef = useRef<HTMLDivElement>(null);
+    const [isScroll, setIsScroll] = useState(true);
 
     useEffect(() => {
         let minVal = Math.min(...att.feeds!.map((feed) => {
@@ -99,26 +102,34 @@ export default function SmartGardenChart({ att }: { att: Props }) {
                 original: value,
             } as DataPointType;
         }));
+        setIsScroll(false);
     }, [att.feeds]);
+
+    useEffect(() => {
+        if (chartContainerRef.current) {
+            chartContainerRef.current.scrollLeft = chartContainerRef.current.scrollWidth;
+        }
+    }, [isScroll]);
 
     return (
         dataPoints ?
-            <div>
-                <div className="bg-white rounded-lg shadow-lg p-8">
-                    <ResponsiveContainer width="100%" height={400}>
-                        <AreaChart data={dataPoints}>
+            <div className="bg-white rounded-lg shadow-lg p-8" >
+                <div ref={chartContainerRef} className="overflow-x-auto" style={{ whiteSpace: 'nowrap' }}>
+                    <ResponsiveContainer width={dataPoints.length > 100 ? dataPoints.length * 8 : "100%"} height={400}>
+                        <AreaChart className='relative' data={dataPoints}>
                             <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#333' }} />
-                            <YAxis tick={false}
+                            <YAxis
+                                tick={false}
                                 axisLine={false}
                                 tickLine={false}
                                 label={{ value: att.unit, position: 'insideTop', fill: '#333' }}
                             />
+                            {generateReferenceLines(dataPoints, mapping[att.field as keyof Field])}
                             {/* <CartesianGrid strokeDasharray="3 3" /> */}
                             <Tooltip formatter={(value) => dataPoints.find(d => d[mapping[att.field as keyof Field]] === value)?.original} />
                             <Legend />
                             <Area type="monotone" dataKey={mapping[att.field as keyof Field]} stackId="1" stroke={att.color} fill={att.color} />
                             {/* <ReferenceLine y={35} stroke="red" strokeDasharray="3 3" label={{ position: 'insideTopLeft', value: `${35}`, fill: 'red' }} /> */}
-                            {generateReferenceLines(dataPoints, mapping[att.field as keyof Field])}
                         </AreaChart>
                     </ResponsiveContainer>
                 </div>

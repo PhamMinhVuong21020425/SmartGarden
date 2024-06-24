@@ -50,7 +50,7 @@ export default function HomePage() {
     const [refreshToken, setRefreshToken] = useState(Math.random());
 
     useEffect(() => {
-        getData(2000)
+        getData(10000)
             .then((feeds) => {
                 // const averages: Metrics = [];
 
@@ -100,8 +100,8 @@ export default function HomePage() {
                 setData(feeds);
             })
             .finally(() => {
-                // Update refreshToken after 3 seconds so this event will re-trigger and update the data
-                setTimeout(() => setRefreshToken(Math.random()), 5000);
+                // Update refreshToken after 10 seconds so this event will re-trigger and update the data
+                setTimeout(() => setRefreshToken(Math.random()), 10000);
             });
     }, [refreshToken]);
 
