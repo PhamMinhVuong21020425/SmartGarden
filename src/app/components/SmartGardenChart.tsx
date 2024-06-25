@@ -56,7 +56,6 @@ const generateReferenceLines = (dataPoints: DataPointType[], dataKey: string) =>
         const yValue = minValue + i * interval;
         referenceLines.push(
             <ReferenceLine
-                className='absolute top-0 left-0'
                 key={`refLine-${i}`}
                 y={yValue}
                 stroke="#ddd"
@@ -113,10 +112,13 @@ export default function SmartGardenChart({ att }: { att: Props }) {
 
     return (
         dataPoints ?
-            <div className="bg-white rounded-lg shadow-lg p-8" >
-                <div ref={chartContainerRef} className="overflow-x-auto" style={{ whiteSpace: 'nowrap' }}>
-                    <ResponsiveContainer width={dataPoints.length > 100 ? dataPoints.length * 8 : "100%"} height={400}>
-                        <AreaChart className='relative' data={dataPoints}>
+            <div className="relative bg-white rounded-lg shadow-lg p-8">
+                <div className="flex justify-center mb-4">
+                    <h2 className="ml-2 text-xl font-bold text-gray-800">{mapping[att.field as keyof Field]}</h2>
+                </div>
+                <div className="absolute left-0 z-10 " style={{ width: '60px', height: '100%' }}>
+                    <ResponsiveContainer className='bg-white' width="100%" height={400}>
+                        <AreaChart data={dataPoints}>
                             <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#333' }} />
                             <YAxis
                                 tick={false}
@@ -127,7 +129,26 @@ export default function SmartGardenChart({ att }: { att: Props }) {
                             {generateReferenceLines(dataPoints, mapping[att.field as keyof Field])}
                             {/* <CartesianGrid strokeDasharray="3 3" /> */}
                             <Tooltip formatter={(value) => dataPoints.find(d => d[mapping[att.field as keyof Field]] === value)?.original} />
-                            <Legend />
+                            {/* <Legend /> */}
+                            <Area type="monotone" dataKey={mapping[att.field as keyof Field]} stackId="1" stroke={att.color} fill={att.color} />
+                            {/* <ReferenceLine y={35} stroke="red" strokeDasharray="3 3" label={{ position: 'insideTopLeft', value: `${35}`, fill: 'red' }} /> */}
+                        </AreaChart>
+                    </ResponsiveContainer>
+                </div>
+                <div ref={chartContainerRef} className="overflow-x-auto" style={{ whiteSpace: 'nowrap' }}>
+                    <ResponsiveContainer width={dataPoints.length > 100 ? dataPoints.length * 8 : "95%"} height={400}>
+                        <AreaChart data={dataPoints} className='ml-8'>
+                            <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#333' }} />
+                            {/* <YAxis
+                                tick={false}
+                                axisLine={false}
+                                tickLine={false}
+                                label={{ value: att.unit, position: 'insideTop', fill: '#333' }}
+                            /> */}
+                            {generateReferenceLines(dataPoints, mapping[att.field as keyof Field])}
+                            {/* <CartesianGrid strokeDasharray="3 3" /> */}
+                            <Tooltip formatter={(value) => dataPoints.find(d => d[mapping[att.field as keyof Field]] === value)?.original} />
+                            {/* <Legend /> */}
                             <Area type="monotone" dataKey={mapping[att.field as keyof Field]} stackId="1" stroke={att.color} fill={att.color} />
                             {/* <ReferenceLine y={35} stroke="red" strokeDasharray="3 3" label={{ position: 'insideTopLeft', value: `${35}`, fill: 'red' }} /> */}
                         </AreaChart>
