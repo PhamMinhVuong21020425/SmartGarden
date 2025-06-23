@@ -27,9 +27,9 @@ const LoadingContainer = styled.div`
 `;
 
 const Loading = () => (
-    <LoadingContainer>
-        <Loader />
-    </LoadingContainer>
+  <LoadingContainer>
+    <Loader />
+  </LoadingContainer>
 );
 
 export default Loading;
