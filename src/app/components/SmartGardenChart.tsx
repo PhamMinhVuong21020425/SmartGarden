@@ -17,8 +17,9 @@ import { Metrics, Field } from '../pages/Home';
 type Props = {
   field: string;
   color: string;
-  feeds: Metrics;
+  metrics: Metrics;
   unit: string;
+  device: string;
 };
 
 interface DataPoint<T> {
@@ -31,22 +32,26 @@ type DataPointType = DataPoint<number> & {
 };
 
 const mapping: Field = {
-  field1: 'CO2',
-  field2: 'Humidity',
-  field3: 'Room Temperature',
-  field4: 'Sensor Temperature',
-  field5: 'SHT85 Temperature',
+  ppm: 'CO2',
+  humi: 'Humidity',
+  temp: 'Sensor Temperature',
+  soil: 'Soil Humidity',
+  room: 'Room Temperature',
+  sht85: 'SHT85 Temperature',
 };
 
-function formatTime(time: string): string {
-  const date = new Date(time);
+function formatTime(ms: number): string {
+  const date = new Date(ms);
 
+  const pad = (num: number) => String(num).padStart(2, '0');
+
+  const day = pad(date.getDate());
+  const month = pad(date.getMonth() + 1);
   const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  const seconds = String(date.getSeconds()).padStart(2, '0');
+
+  const hours = pad(date.getHours());
+  const minutes = pad(date.getMinutes());
+  const seconds = pad(date.getSeconds());
 
   return `${hours}:${minutes}:${seconds}`;
 }
@@ -97,9 +102,16 @@ export default function SmartGardenChart({ att }: { att: Props }) {
   const [isScroll, setIsScroll] = useState(true);
 
   useEffect(() => {
+    let key = `${att.device}_${att.field as keyof Metrics}`;
+    if (att.field === 'soil') {
+      key = `${att.device.replace('TB', 'SM')}_soil`;
+    }
+    if (!att.metrics || !att.metrics[key]) {
+      return;
+    }
     const minVal = Math.min(
-      ...att.feeds!.map(feed => {
-        const value = feed[att.field as keyof Metrics[0]] as number;
+      ...att.metrics[key].map(point => {
+        const value = point.value;
         if (!isNaN(value)) {
           return value;
         } else {
@@ -108,22 +120,22 @@ export default function SmartGardenChart({ att }: { att: Props }) {
       })
     );
     setDataPoints(
-      att.feeds!.map(feed => {
-        const value = feed[att.field as keyof Metrics[0]] as number;
+      att.metrics[key].map(point => {
+        const value = point.value;
         let newVal = 10000.0 * (value - minVal);
         if (isNaN(newVal)) {
           newVal = 0;
         }
 
         return {
-          name: formatTime(feed.created_at),
+          name: formatTime(point.ts),
           [mapping[att.field as keyof Field]]: newVal,
           original: value,
         } as DataPointType;
       })
     );
     setIsScroll(false);
-  }, [att.feeds]);
+  }, [att.metrics, att.device]);
 
   useEffect(() => {
     if (chartContainerRef.current) {

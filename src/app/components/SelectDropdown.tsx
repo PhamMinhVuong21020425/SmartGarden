@@ -6,8 +6,8 @@ interface Option {
 }
 
 interface SelectDropdownProps {
-  value: Option | null;
-  onChange: (option: Option | null) => void;
+  value: Option;
+  onChange: (option: Option) => void;
   options: Option[];
   placeholder?: string;
   className?: string;

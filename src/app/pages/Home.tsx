@@ -1,107 +1,72 @@
 'use client';
 import SelectDropdown from '../components/SelectDropdown';
 import SmartGardenChart from '../components/SmartGardenChart';
-import { getData } from '@/actions/getData';
-import { useState, useEffect } from 'react';
 import Loading from '../components/Loading';
+import { useState, useEffect } from 'react';
+import { getData } from '@/actions/getData';
+import { useTelemetry } from '../hooks/useTelemetry';
 
-interface Option {
-  value: string;
-  label: string;
-}
-
-const CO2 = 'field1';
-const HUMIDITY = 'field2';
-const ROOM_TEMPERATURE = 'field3';
-const SENSOR_TEMPERATURE = 'field4';
-const SHT85_TEMPERATURE = 'field5';
-
-export type Metrics = {
-  entry_id: number;
-  created_at: string;
-  [CO2]: number;
-  [HUMIDITY]: number;
-  [ROOM_TEMPERATURE]: number;
-  [SENSOR_TEMPERATURE]: number;
-  [SHT85_TEMPERATURE]: number;
-}[];
+const CO2 = 'ppm';
+const HUMIDITY = 'humi';
+const SENSOR_TEMPERATURE = 'temp';
+const SOIL_HUMIDITY = 'soil';
+const ROOM_TEMPERATURE = 'room';
+const SHT85_TEMPERATURE = 'sht85';
 
 export type Field = {
   [CO2]: string;
   [HUMIDITY]: string;
-  [ROOM_TEMPERATURE]: string;
   [SENSOR_TEMPERATURE]: string;
+  [SOIL_HUMIDITY]: string;
+  [ROOM_TEMPERATURE]: string;
   [SHT85_TEMPERATURE]: string;
 };
 
+export type TimeSeriesData = {
+  ts: number; // Timestamp in milliseconds
+  value: number; // Value of the metric
+};
+
+export type Metrics = {
+  [key: string]: TimeSeriesData[];
+};
+
+type Option = {
+  value: string;
+  label: string;
+};
+
 const options: Option[] = [
-  { value: 'option1', label: 'Thiết bị 1' },
-  { value: 'option2', label: 'Thiết bị 2' },
-  { value: 'option3', label: 'Thiết bị 3' },
+  { value: 'TB1', label: 'Thiết bị 1' },
+  { value: 'TB2', label: 'Thiết bị 2' },
+  { value: 'TB3', label: 'Thiết bị 3' },
 ];
 
+const deviceId = process.env.NEXT_PUBLIC_THINGSBOARD_DEVICE_ID!;
+
 export default function HomePage() {
-  const [selectedOption, setSelectedOption] = useState<Option | null>(null);
+  const [selectedOption, setSelectedOption] = useState<Option>(options[0]);
+  const [jwtToken, setJwtToken] = useState<string>();
   const [data, setData] = useState<Metrics>();
-  const [refreshToken, setRefreshToken] = useState(Math.random());
 
   useEffect(() => {
-    getData(100)
-      .then(feeds => {
-        // const averages: Metrics = [];
+    getData().then(({ token, data }) => {
+      const reversed: Metrics = {};
 
-        // for (let i = 0; i < feeds.length; i += 20) {
-        //     const sums: { [key: string]: number } = {
-        //         field1: 0,
-        //         field2: 0,
-        //         field3: 0,
-        //         field4: 0,
-        //         field5: 0,
-        //     };
+      for (const key in data) {
+        if (Array.isArray(data[key])) {
+          reversed[key] = [...data[key]].reverse();
+        }
+      }
 
-        //     const counts: { [key: string]: number } = {
-        //         field1: 0,
-        //         field2: 0,
-        //         field3: 0,
-        //         field4: 0,
-        //         field5: 0,
-        //     };
+      setJwtToken(token);
+      setData(reversed);
+    });
+  }, []);
 
-        //     const chunk: Metrics = feeds.slice(i, i + 20);
-        //     const entry_id = chunk[0].entry_id;
-        //     const created_at = chunk[0].created_at;
+  const telemetryHis = useTelemetry(deviceId, jwtToken ?? '', data ?? {});
 
-        //     chunk.forEach(item => {
-        //         for (const key of Object.keys(sums)) {
-        //             const value = +item[key as keyof Metrics[0]];
-        //             if (!isNaN(value)) {
-        //                 sums[key as keyof Field] += value;
-        //                 counts[key as keyof Field]++;
-        //             }
-        //         }
-        //     });
-        //     const average = {
-        //         entry_id,
-        //         created_at,
-        //         field1: sums.field1 / counts.field1,
-        //         field2: sums.field2 / counts.field2,
-        //         field3: sums.field3 / counts.field3,
-        //         field4: sums.field4 / counts.field4,
-        //         field5: sums.field5 / counts.field5,
-        //     } as Metrics[0];
-
-        //     averages.push(average);
-        // }
-
-        setData(feeds);
-      })
-      .finally(() => {
-        // Update refreshToken after 10 seconds so this event will re-trigger and update the data
-        setTimeout(() => setRefreshToken(Math.random()), 10000);
-      });
-  }, [refreshToken]);
-
-  const handleChange = (option: Option | null) => {
+  const handleChange = (option: Option) => {
     setSelectedOption(option);
   };
 
@@ -130,51 +95,66 @@ export default function HomePage() {
       </div>
 
       {/* Graph */}
-      {data ? (
+      {jwtToken && data && telemetryHis ? (
         <>
           <SmartGardenChart
             att={{
-              field: 'field1',
+              field: 'ppm',
               color: '#8bf8a7',
-              feeds: data,
+              metrics: telemetryHis,
               unit: 'ppm',
+              device: selectedOption.value,
             }}
           />
           <br />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <SmartGardenChart
               att={{
-                field: 'field2',
-                color: 'pink',
-                feeds: data.slice(data.length - 100),
+                field: 'humi',
+                color: 'violet',
+                metrics: telemetryHis,
                 unit: '%',
+                device: selectedOption.value,
               }}
             />
             <SmartGardenChart
               att={{
-                field: 'field3',
+                field: 'temp',
                 color: 'orange',
-                feeds: data.slice(data.length - 100),
+                metrics: telemetryHis,
                 unit: '℃',
+                device: selectedOption.value,
               }}
             />
-            <SmartGardenChart
+            {/* <SmartGardenChart
               att={{
-                field: 'field4',
+                field: 'room',
                 color: 'blue',
-                feeds: data.slice(data.length - 100),
+                metrics: telemetryHis,
                 unit: '℃',
+                device: selectedOption.value,
               }}
             />
             <SmartGardenChart
               att={{
-                field: 'field5',
+                field: 'sht85',
                 color: '#82ca9d',
-                feeds: data.slice(data.length - 100),
+                metrics: telemetryHis,
                 unit: '℃',
+                device: selectedOption.value,
               }}
-            />
+            /> */}
           </div>
+          <br />
+          <SmartGardenChart
+            att={{
+              field: 'soil',
+              color: 'red',
+              metrics: telemetryHis,
+              unit: '%',
+              device: selectedOption.value,
+            }}
+          />
         </>
       ) : (
         <Loading />
